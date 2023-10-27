@@ -1,6 +1,6 @@
 package model;
 
-import grupo5.reto1.model.Encapsulator;
+//import grupo5.reto1.model.Encapsulator;
 import grupo5.reto1.model.MessageType;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -42,15 +42,15 @@ public class Server {
                 if (num_users < MAX_USERS) {
 
                     client = server.accept();
-                    WorkingThread w1 = new WorkingThread();
-                    w1.run();
+                   // WorkingThread w1 = new WorkingThread();
+                  //  w1.run();
                     conectarCliente();
 
                 } else {
                     oos = new ObjectOutputStream(client.getOutputStream());
-                    Encapsulator encapsulator = new Encapsulator();
-                    encapsulator.setMessage(MessageType.MAX_USERS_CONECTED);
-                    oos.writeObject(encapsulator);
+                 //   Encapsulator encapsulator = new Encapsulator();
+                //    encapsulator.setMessage(MessageType.MAX_USERS_CONECTED);
+                //    oos.writeObject(encapsulator);
                 }
                 desconectarCliente();
             }
