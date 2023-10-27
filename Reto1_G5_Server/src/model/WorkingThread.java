@@ -1,5 +1,6 @@
 package model;
 
+import grupo5.reto1.model.MessageType;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
