@@ -2,6 +2,7 @@ package model;
 
 //import grupo5.reto1.model.Encapsulator;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -25,15 +26,17 @@ public class Server {
     private boolean serverAbierto = true;
 
     /**
-     * Abre el servidor y cuando se conecte un usuario creamos un hilo para que
+     * Abre el servidor, y cuando se conecte un usuario creamos un hilo para que
      * haga el trabajo.
      */
     public void openServer() {
         Socket client = null;
         ServerSocket server = null;
         ObjectOutputStream oos = null;
+        ObjectInputStream ois = null;
 
         try {
+            LOGGER.info("El servidor se ha abierto");
             server = new ServerSocket(PORT);
 
             while (serverAbierto) {
@@ -41,8 +44,10 @@ public class Server {
                 if (num_users < MAX_USERS) {
 
                     client = server.accept();
-                   // WorkingThread w1 = new WorkingThread();
-                  //  w1.run();
+                    LOGGER.info("Un cliente se ha conectado.");
+                    Message message = (Message) ois.readObject();
+                    WorkingThread w1 = new WorkingThread(message);
+                    w1.run();
                     conectarCliente();
 
                 } else {
@@ -55,6 +60,8 @@ public class Server {
             }
 
         } catch (IOException ex) {
+            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
