@@ -1,8 +1,5 @@
 package model;
 
-import grupo5.reto1.model.Encapsulator;
-import grupo5.reto1.model.Message;
-import grupo5.reto1.model.MessageType;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -54,8 +51,8 @@ public class Server {
 
                 } else {
                     oos = new ObjectOutputStream(client.getOutputStream());
-                    Encapsulator encapsulator = new Encapsulator();
-                    encapsulator.setMessage(MessageType.MAX_USERS_CONECTED);
+                    Message encapsulator = new Message();
+                    encapsulator.setMessageType(MessageType.MAX_USERS_CONECTED);
                     oos.writeObject(encapsulator);
                 }
                 desconectarCliente();

@@ -1,7 +1,5 @@
 package model;
 
-import grupo5.reto1.model.Message;
-
 /**
  *
  * @author Ian.
