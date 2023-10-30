@@ -15,6 +15,7 @@ import java.util.Stack;
 public class Pool {
 
     private static Stack<Connection> connections = null;
+    private static Pool pool;
 
     /**
      * Es el constructor del pool
@@ -23,8 +24,12 @@ public class Pool {
         connections = new Stack();
     }
 
-    public static Pool getPool() {
-        return new Pool();
+     public static Pool getPool() {
+        if (pool == null) {
+            pool = new Pool();
+        }
+
+        return pool;
     }
 
     /**

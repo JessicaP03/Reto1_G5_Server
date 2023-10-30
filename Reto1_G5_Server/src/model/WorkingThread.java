@@ -13,18 +13,14 @@ import java.util.logging.Logger;
 public class WorkingThread extends Thread {
     
     private Socket socketCliente;
-    MessageType respuesta;
+    private Message respuesta;
 
-    public WorkingThread(Socket socketCliente, MessageType respuesta) {
+    public WorkingThread(Socket socketCliente, Message respuesta) {
         this.socketCliente = socketCliente;
         this.respuesta = respuesta;
     }
     
-    
-
-    WorkingThread(Message message) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+   
 
     @Override
     public void run() {

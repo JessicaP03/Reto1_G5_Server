@@ -46,7 +46,7 @@ public class Server {
                     client = server.accept();
                     LOGGER.info("Un cliente se ha conectado.");
                     Message message = (Message) ois.readObject();
-                    WorkingThread w1 = new WorkingThread(message);
+                    WorkingThread w1 = new WorkingThread(client, message);
                     w1.run();
                     conectarCliente();
 
