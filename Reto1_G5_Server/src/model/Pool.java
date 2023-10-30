@@ -28,6 +28,8 @@ public class Pool {
      * devuelve al usuario, si no coje la ultima del esta y la devuelve.
      *
      * @return una conexion a la base de datos.
+     * @throws grupo5.reto1.exceptions.ServerErrorException controla un error a
+     * la hora de conectarse o desconectarse con el servidor.
      */
     public synchronized Connection getConnection() throws ServerErrorException {
         Connection con = null;
@@ -66,6 +68,9 @@ public class Pool {
     /**
      * Cuando el servidor se cierre se cerraran todas las conexiones que se han
      * creado.
+     *
+     * @throws grupo5.reto1.exceptions.ServerErrorException controla un error a
+     * la hora de contectarse o desconectarse con el servidor.
      */
     public synchronized void closeServer() throws ServerErrorException {
         try {
