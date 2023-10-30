@@ -52,9 +52,9 @@ public class Server {
 
                 } else {
                     oos = new ObjectOutputStream(client.getOutputStream());
-                 //   Encapsulator encapsulator = new Encapsulator();
-                //    encapsulator.setMessage(MessageType.MAX_USERS_CONECTED);
-                //    oos.writeObject(encapsulator);
+                    Message encapsulator = new Message();
+                    encapsulator.setMessageType(MessageType.MAX_USERS_CONECTED);
+                    oos.writeObject(encapsulator);
                 }
                 desconectarCliente();
             }
