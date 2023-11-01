@@ -49,6 +49,7 @@ public class DaoImplementation implements Signable{
     @Override
     public User getExecuteSignUp(User user) throws UserAlreadyExistsException, UserNotFoundException, ServerErrorException {
         ResultSet rs = null;
+        conn = pool.getConnection();
         try {
             stmt = conn.prepareStatement(INSERT_RES_PARTNER);
             stmt.setInt(1, user.getCompany());
@@ -60,21 +61,24 @@ public class DaoImplementation implements Signable{
             stmt.setInt(13, user.getZip());
             stmt.setInt(14, user.getPhone());
             stmt.setBoolean(15, user.getActivo());
-        } catch (Exception e) {
-        }
-       conn = pool.getConnection();
-        try {
-            stmt = conn.prepareStatement(INSERT_RES_USERS);
-            stmt.setInt(1, user.getCompany());
-            stmt.setDate(3, Date.valueOf(user.getCreateDate()));
-            stmt.setString(4, user.getEmail());
-            stmt.setString(5, user.getPasswd());
-            stmt.setDate(8, Date.valueOf(user.getWriteDate()));
-
             stmt.executeUpdate();
-        } catch (SQLException ex) {
-            Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+           
+            if (stmt.executeUpdate() == 1) {
+				
+                stmt = conn.prepareStatement(INSERT_RES_USERS);
+                stmt.setInt(1, user.getCompany());
+                stmt.setDate(3, Date.valueOf(user.getCreateDate()));
+                stmt.setString(4, user.getEmail());
+                stmt.setString(5, user.getPasswd());
+                stmt.setDate(8, Date.valueOf(user.getWriteDate()));
+                stmt.executeUpdate();
+           		
+            }
+        } catch (Exception e) {
+            
         }
+      
+       
         
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
