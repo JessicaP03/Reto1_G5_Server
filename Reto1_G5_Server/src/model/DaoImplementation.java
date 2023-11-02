@@ -26,25 +26,24 @@ import java.util.logging.Logger;
  *
  * @author Ian.
  */
-public class DaoImplementation implements Signable{
-    
+public class DaoImplementation implements Signable {
+
     private Connection conn = null;
     private PreparedStatement stmt;
     private static Pool pool;
     private static final Logger LOG = Logger.getLogger(DaoImplementation.class.getName());
-    
-    private final String INSERT_RES_USERS = "INSERT INTO res_users(company_id, partner_id, create_date, login, password, create_uid, write_uid, write_date, notification_type) VALUES ( ?, ?, ?, ?, ?, 2, 3, now(), 'email');";
-    private final String INSERT_RES_PARTNER = "INSERT INTO res_partner(company_id, create_date, name, parent_id, commercial_partner_id, create_uid, write_uid, display_name, ref, vat, street, zip, phone, date, active) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), ?)";
-    private final String INSERT_RES_COMPANY = "INSERT INTO res_company_users_rel(cid, user_id) VALUES (?, ?)";
-    private final String INSERT_RES_GROUPS = "INSERT INTO res_groups_users_rel(gid, uid) VALUES (?, ?)";
-    //private final String k;
 
-    
-    
-   public void openConexion()  {
-      this.pool = pool.getPool();
-      
-  }
+    private final String INSERT_RES_USERS = "INSERT INTO res_users(company_id, partner_id, create_date, login, password, create_uid, write_uid, write_date, notification_type) VALUES ( ?, ?, ?, ?, ?, 2, 3, now(), 'email');";
+    private final String INSERT_RES_PARTNER = "INSERT INTO res_partner(company_id, create_date, name, parent_id, commercial_partner_id, street, zip, phone, date, active) VALUES (1, ?, ?, ?, ?, ?, ?, ?, now(), ?)";
+    private final String INSERT_RES_COMPANY = "INSERT INTO res_company_users_rel(cid, user_id) VALUES (1, ?)";
+    private final String INSERT_RES_GROUPS = "INSERT INTO res_groups_users_rel(gid, uid) VALUES (16, ?), (26, ?), (28,?), (31,?)";
+    private final String SELECT_MAX_USERS = "SELECT max(id) as id from res_users";
+    private final String SELECT_MAX_PARTNER = "SELECT max(id) as id from res_partner";
+
+    public void openConexion() {
+        this.pool = pool.getPool();
+
+    }
 
     @Override
     public User getExecuteSignUp(User user) throws UserAlreadyExistsException, UserNotFoundException, ServerErrorException {
@@ -55,32 +54,66 @@ public class DaoImplementation implements Signable{
             stmt.setInt(1, user.getCompany());
             stmt.setDate(2, Date.valueOf(user.getCreateDate()));
             stmt.setString(3, user.getName());
-            stmt.setString(8, user.getName());
-            stmt.setString(11, user.getAddress());
-            stmt.setInt(12, user.getZip());
-            stmt.setInt(13, user.getZip());
-            stmt.setInt(14, user.getPhone());
-            stmt.setBoolean(15, user.getActivo());
-            stmt.executeUpdate();
-           
+            stmt.setString(4, user.getName());
+            stmt.setString(5, user.getAddress());
+            stmt.setInt(6, user.getZip());
+            stmt.setInt(7, user.getPhone());
+            stmt.setBoolean(8, user.getActivo());
+
             if (stmt.executeUpdate() == 1) {
-				
+
                 stmt = conn.prepareStatement(INSERT_RES_USERS);
                 stmt.setInt(1, user.getCompany());
                 stmt.setDate(3, Date.valueOf(user.getCreateDate()));
                 stmt.setString(4, user.getEmail());
                 stmt.setString(5, user.getPasswd());
-                stmt.setDate(8, Date.valueOf(user.getWriteDate()));
-                stmt.executeUpdate();
-           		
+                stmt.setDate(6, Date.valueOf(user.getWriteDate()));
+
+                if (stmt.executeUpdate() == 1) {
+                     String idUser = null;
+                    
+                    stmt = conn.prepareStatement(SELECT_MAX_PARTNER);
+                    rs = stmt.executeQuery();
+                    if (rs.next()) {
+                        idUser = rs.getString("id");
+                    }else if(idUser == null){
+                        throw new SQLException("Ha ocurrido un error en la inserción");
+                    }
+                    stmt = conn.prepareStatement(INSERT_RES_GROUPS);
+
+                    stmt.setString(1, idUser);
+
+                    
+                         
+                    if (stmt.executeUpdate() == 1) {
+                        String idPartner = null;
+                       
+                        stmt = conn.prepareStatement(SELECT_MAX_USERS);
+                        rs = stmt.executeQuery();
+                        if (rs.next()) {
+                        idPartner = rs.getString("id");
+                    }else if(idPartner == null){
+                        throw new SQLException("Ha ocurrido un error en la inserción");
+                    }
+                    stmt = conn.prepareStatement(INSERT_RES_COMPANY);
+
+                    stmt.setString(1, idPartner);
+
+                    stmt.executeUpdate();
+
+                }
+                }
+
             }
-        } catch (Exception e) {
             
+        } catch (SQLException ex) {
+                Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+        }finally{
+               pool.closeServer();
         }
-      
-       
+        return user;
+
         
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
@@ -88,5 +121,4 @@ public class DaoImplementation implements Signable{
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-   
 }
