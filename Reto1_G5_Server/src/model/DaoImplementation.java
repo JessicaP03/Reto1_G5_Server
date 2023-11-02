@@ -6,6 +6,7 @@
 package model;
 
 import exceptions.CredentialErrorException;
+import exceptions.InsertErrorException;
 import exceptions.ServerErrorException;
 import exceptions.UserAlreadyExistsException;
 import exceptions.UserNotFoundException;
@@ -41,21 +42,32 @@ public class DaoImplementation implements Signable {
     private final String SELECT_MAX_PARTNER = "SELECT max(id) as id from res_partner";
     private final String USUARIO_EXISTE = "SELECT login from res_users where login =?";
 
-    public void openConexion() {
+    public void openConnetion() throws ServerErrorException {
         this.pool = pool.getPool();
 
+        conn = pool.getConnection();
+    }
+
+    public void closeConnection() throws ServerErrorException {
+        try {
+            stmt.close();
+            pool.closeServer();
+        } catch (SQLException ex) {
+            Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override
-    public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException {
+    public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException, InsertErrorException {
+        this.openConnetion();
+
         ResultSet rs = null;
-        
-        conn = pool.getConnection();
-        if(comprobarUsuarioExistente(user.getEmail())){
-            throw new UserAlreadyExistsException(USUARIO_EXISTE);
-        }else{
 
         try {
+            if (comprobarUsuarioExistente(user.getEmail())) {
+                throw new UserAlreadyExistsException(MessageType.USER_ALREADY_EXISTS_RESPONSE + "");
+            }
+
             stmt = conn.prepareStatement(INSERT_RES_PARTNER);
             stmt.setInt(1, user.getCompany());
             stmt.setDate(2, Date.valueOf(user.getCreateDate()));
@@ -76,106 +88,76 @@ public class DaoImplementation implements Signable {
                 stmt.setDate(6, Date.valueOf(user.getWriteDate()));
 
                 if (stmt.executeUpdate() == 1) {
-                     String idUser = null;
-                    
+                    String idUser = null;
+
                     stmt = conn.prepareStatement(SELECT_MAX_PARTNER);
                     rs = stmt.executeQuery();
+
                     if (rs.next()) {
                         idUser = rs.getString("id");
-                    }else if(idUser == null){
-                        throw new SQLException("Ha ocurrido un error en la inserción");
+
+                        if (idUser == null) {
+                            throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
+                        }
+
                     }
                     stmt = conn.prepareStatement(INSERT_RES_GROUPS);
 
                     stmt.setString(1, idUser);
 
-                    
-                         
                     if (stmt.executeUpdate() == 1) {
                         String idPartner = null;
-                       
+
                         stmt = conn.prepareStatement(SELECT_MAX_USERS);
                         rs = stmt.executeQuery();
+
                         if (rs.next()) {
-                        idPartner = rs.getString("id");
-                    }else if(idPartner == null){
-                        throw new SQLException("Ha ocurrido un error en la inserción");
+                            idPartner = rs.getString("id");
+                            stmt = conn.prepareStatement(INSERT_RES_COMPANY);
+
+                            stmt.setString(1, idPartner);
+
+                            stmt.executeUpdate();
+                        } else {
+                            throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID partner.");
+                        }
+
                     }
-                    stmt = conn.prepareStatement(INSERT_RES_COMPANY);
-
-                    stmt.setString(1, idPartner);
-
-                    stmt.executeUpdate();
-
                 }
-                }
-
             }
-            
         } catch (SQLException ex) {
-                Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-                throw new ServerErrorException("Ha ocurrido un problema en el servidor");
-        } finally{
-              try {
-                pool.closeServer();
-                if(stmt !=null){
-                    try {
-                        stmt.close();
-                    } catch (SQLException ex) {
-                        Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            } catch (ServerErrorException ex) {
-                Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            throw new ServerErrorException("Ha ocurrido un problema en el servidor");
         }
+        this.closeConnection();
         return user;
-            
-        }
-        
     }
 
     @Override
     public User getExecuteSignIn(User user) throws ServerErrorException, CredentialErrorException {
-        
-        
+
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    private boolean comprobarUsuarioExistente(String email) {
+    private boolean comprobarUsuarioExistente(String email) throws ServerErrorException, UserAlreadyExistsException {
+        this.openConnetion();
+
         boolean existe = false;
         ResultSet rs = null;
         try {
-            conn = pool.getConnection();
-            
             stmt = conn.prepareStatement(USUARIO_EXISTE);
-            
+
             stmt.setString(1, email);
             rs = stmt.executeQuery();
-            if(rs.next()){
+
+            if (rs.next()) {
                 existe = true;
             }
-            
-        } catch (ServerErrorException ex) {
-            Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-            
+
         } catch (SQLException ex) {
-            Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-        }finally{
-            try {
-                pool.closeServer();
-                if(stmt !=null){
-                    try {
-                        stmt.close();
-                    } catch (SQLException ex) {
-                        Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            } catch (ServerErrorException ex) {
-                Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            throw new UserAlreadyExistsException("Ese usuario ya existe");
         }
-       
+
+        this.closeConnection();
         return existe;
     }
 
