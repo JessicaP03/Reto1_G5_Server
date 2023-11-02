@@ -1,5 +1,6 @@
 package model;
 
+//import grupo5.reto1.model.Encapsulator;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -21,7 +22,7 @@ public class Server {
 
     final private int PORT = Integer.parseInt(ResourceBundle.getBundle("files.config").getString("port"));
     final private int MAX_USERS = Integer.parseInt(ResourceBundle.getBundle("files.config").getString("max_users"));
-    private int num_users = 0;
+    private static int num_users = 0;
     private boolean serverAbierto = true;
 
     /**
@@ -44,10 +45,10 @@ public class Server {
 
                     client = server.accept();
                     LOGGER.info("Un cliente se ha conectado.");
-                    Message message = (Message) ois.readObject();
-                    WorkingThread w1 = new WorkingThread(message);
-                    w1.run();
-                    conectarCliente();
+
+                    WorkingThread wt = new WorkingThread(client);
+                    wt.run();
+                    conectarCliente(wt);
 
                 } else {
                     oos = new ObjectOutputStream(client.getOutputStream());
@@ -55,12 +56,9 @@ public class Server {
                     encapsulator.setMessageType(MessageType.MAX_USERS_CONECTED);
                     oos.writeObject(encapsulator);
                 }
-                desconectarCliente();
             }
 
         } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ClassNotFoundException ex) {
             Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -69,7 +67,7 @@ public class Server {
      * Sumamos uno a una variable que contiene la cantidad de usuarios que hay
      * conectados al mismo tiempo.
      */
-    public synchronized void conectarCliente() {
+    public static synchronized void conectarCliente(WorkingThread w) {
         num_users++;
     }
 
@@ -77,7 +75,7 @@ public class Server {
      * Restamos uno a una variable que contiene la cantidad de usuarios que hay
      * conectados al mismo tiempo.
      */
-    public synchronized void desconectarCliente() {
+    public static synchronized void desconectarCliente(WorkingThread w) {
         num_users--;
     }
 
