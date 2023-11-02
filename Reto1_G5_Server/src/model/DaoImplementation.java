@@ -39,6 +39,7 @@ public class DaoImplementation implements Signable {
     private final String INSERT_RES_GROUPS = "INSERT INTO res_groups_users_rel(gid, uid) VALUES (16, ?), (26, ?), (28,?), (31,?)";
     private final String SELECT_MAX_USERS = "SELECT max(id) as id from res_users";
     private final String SELECT_MAX_PARTNER = "SELECT max(id) as id from res_partner";
+    private final String USUARIO_EXISTE = "SELECT login from res_users where login =?";
 
     public void openConexion() {
         this.pool = pool.getPool();
@@ -46,9 +47,14 @@ public class DaoImplementation implements Signable {
     }
 
     @Override
-    public User getExecuteSignUp(User user) throws UserAlreadyExistsException, UserNotFoundException, ServerErrorException {
+    public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException {
         ResultSet rs = null;
+        
         conn = pool.getConnection();
+        if(comprobarUsuarioExistente(user.getEmail())){
+            throw new UserAlreadyExistsException(USUARIO_EXISTE);
+        }else{
+
         try {
             stmt = conn.prepareStatement(INSERT_RES_PARTNER);
             stmt.setInt(1, user.getCompany());
@@ -108,17 +114,69 @@ public class DaoImplementation implements Signable {
             
         } catch (SQLException ex) {
                 Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
-        }finally{
-               pool.closeServer();
+                throw new ServerErrorException("Ha ocurrido un problema en el servidor");
+        } finally{
+              try {
+                pool.closeServer();
+                if(stmt !=null){
+                    try {
+                        stmt.close();
+                    } catch (SQLException ex) {
+                        Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            } catch (ServerErrorException ex) {
+                Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return user;
-
+            
+        }
         
     }
 
     @Override
     public User getExecuteSignIn(User user) throws ServerErrorException, CredentialErrorException {
+        
+        
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private boolean comprobarUsuarioExistente(String email) {
+        boolean existe = false;
+        ResultSet rs = null;
+        try {
+            conn = pool.getConnection();
+            
+            stmt = conn.prepareStatement(USUARIO_EXISTE);
+            
+            stmt.setString(1, email);
+            rs = stmt.executeQuery();
+            if(rs.next()){
+                existe = true;
+            }
+            
+        } catch (ServerErrorException ex) {
+            Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+        }finally{
+            try {
+                pool.closeServer();
+                if(stmt !=null){
+                    try {
+                        stmt.close();
+                    } catch (SQLException ex) {
+                        Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            } catch (ServerErrorException ex) {
+                Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+       
+        return existe;
     }
 
 }
