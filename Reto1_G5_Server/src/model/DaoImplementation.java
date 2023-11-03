@@ -1,9 +1,7 @@
-
 package model;
 
 import exceptions.CredentialErrorException;
 import exceptions.InsertErrorException;
-import exceptions.SelectErrorException;
 import exceptions.ServerErrorException;
 import exceptions.UserAlreadyExistsException;
 import java.sql.Connection;
@@ -16,6 +14,7 @@ import java.util.logging.Logger;
 
 /**
  * Esta clase es la implementación de la interfaz de lógica de negocio.
+ *
  * @author Ian.
  */
 public class DaoImplementation implements Signable {
@@ -25,20 +24,24 @@ public class DaoImplementation implements Signable {
     private static Pool pool;
     private static final Logger LOG = Logger.getLogger(DaoImplementation.class.getName());
 
-    private final String INSERT_RES_USERS = "INSERT INTO res_users(company_id, partner_id, create_date, login, password, create_uid, write_uid, write_date, notification_type) VALUES ( ?, ?, ?, ?, ?, 2, 3, now(), 'email');";
-    private final String INSERT_RES_PARTNER = "INSERT INTO res_partner(company_id, create_date, name, parent_id, commercial_partner_id, street, zip, phone, date, active) VALUES (1, ?, ?, ?, ?, ?, ?, ?, now(), ?)";
+    /**
+     * Sentencias SQL para la base de datos de odoo.
+     */
+    private final String INSERT_RES_USERS = "INSERT INTO res_users(company_id, partner_id, create_date, login, password, create_uid, write_uid, write_date, notification_type) VALUES ( ?, ?, ?, ?, ?, 2, 2, ?, 'email');";
+    private final String INSERT_RES_PARTNER = "INSERT INTO res_partner(id,company_id, create_date, name, commercial_partner_id, street, zip, phone, date, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, now(), ?)";
     private final String INSERT_RES_COMPANY = "INSERT INTO res_company_users_rel(cid, user_id) VALUES (1, ?)";
     private final String INSERT_RES_GROUPS = "INSERT INTO res_groups_users_rel(gid, uid) VALUES (16, ?), (26, ?), (28,?), (31,?)";
     private final String SELECT_MAX_USERS = "SELECT max(id) as id from res_users";
+    private final String SELECT_IDPARTNER = "SELECT id from res_partner";
     private final String SELECT_MAX_PARTNER = "SELECT max(id) as id from res_partner";
     private final String USUARIO_EXISTE = "SELECT login from res_users where login =?";
 
     private final String LOGIN_RES_USERS = "SELECT partner_id FROM res_users WHERE login = ? AND password = ?";
     private final String LOGIN_RES_PARTNER = "SELECT name, street, phone, zip FROM res_partner WHERE id = ?";
-
     
     /**
      * Este metodo coge una conexión del pool.
+     *
      * @throws ServerErrorException excepción de error de servidor.
      */
     public void openConnetion() throws ServerErrorException {
@@ -49,7 +52,8 @@ public class DaoImplementation implements Signable {
 
     /**
      * Este metodo devuelve la conexión al pool.
-     * @throws ServerErrorException  excepción de error de servidor.
+     *
+     * @throws ServerErrorException excepción de error de servidor.
      */
     public void closeConnection() throws ServerErrorException {
         try {
@@ -60,19 +64,22 @@ public class DaoImplementation implements Signable {
         }
     }
 
-    
     /**
-     * Este metodo guarda los datos de registro de un usuario en la base de datos de odoo.
+     * Este metodo guarda los datos de registro de un usuario en la base de
+     * datos de odoo.
+     *
      * @param user un objeto usuario con los datos que queremos guardar.
      * @return user, devuelve el usuario
      * @throws UserAlreadyExistsException excepción de usuario existente.
      * @throws ServerErrorException excepción de error en el servidor.
-     * @throws InsertErrorException  excepción de insertar datos en la base de datos de odoo.
+     * @throws InsertErrorException excepción de insertar datos en la base de
+     * datos de odoo.
      */
     @Override
     public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException, InsertErrorException {
         this.openConnetion();
-
+        String partnerId = null;
+        int maxIdPartner = 0;
         ResultSet rs = null;
 
         try {
@@ -80,20 +87,45 @@ public class DaoImplementation implements Signable {
                 throw new UserAlreadyExistsException(MessageType.USER_ALREADY_EXISTS_RESPONSE + "");
             }
 
+            stmt = conn.prepareStatement(SELECT_MAX_PARTNER);
+            rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                maxIdPartner = rs.getInt("id");
+
+                if (maxIdPartner == 0) {
+                    throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
+                }
+
+            }
+
             stmt = conn.prepareStatement(INSERT_RES_PARTNER);
-            stmt.setInt(1, user.getCompany());
-            stmt.setDate(2, Date.valueOf(user.getCreateDate()));
-            stmt.setString(3, user.getName());
+            stmt.setInt(1, maxIdPartner + 1);
+            stmt.setInt(2, user.getCompany());
+            stmt.setDate(3, Date.valueOf(user.getCreateDate()));
             stmt.setString(4, user.getName());
-            stmt.setString(5, user.getAddress());
-            stmt.setInt(6, user.getZip());
-            stmt.setInt(7, user.getPhone());
-            stmt.setBoolean(8, user.getActivo());
+            stmt.setInt(5, maxIdPartner + 1);
+            stmt.setString(6, user.getAddress());
+            stmt.setInt(7, user.getZip());
+            stmt.setInt(8, user.getPhone());
+            stmt.setBoolean(9, user.getActivo());
 
             if (stmt.executeUpdate() == 1) {
 
+                stmt = conn.prepareStatement(SELECT_IDPARTNER);
+                rs = stmt.executeQuery();
+
+                if (rs.next()) {
+                    partnerId = rs.getString("id");
+
+                    if (partnerId == null) {
+                        throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
+                    }
+
+                }
                 stmt = conn.prepareStatement(INSERT_RES_USERS);
                 stmt.setInt(1, user.getCompany());
+                stmt.setString(2, partnerId);
                 stmt.setDate(3, Date.valueOf(user.getCreateDate()));
                 stmt.setString(4, user.getEmail());
                 stmt.setString(5, user.getPasswd());
@@ -118,16 +150,16 @@ public class DaoImplementation implements Signable {
                     stmt.setString(1, idUser);
 
                     if (stmt.executeUpdate() == 1) {
-                        String idPartner = null;
 
+                        String idMaxPartner = null;
                         stmt = conn.prepareStatement(SELECT_MAX_USERS);
                         rs = stmt.executeQuery();
 
                         if (rs.next()) {
-                            idPartner = rs.getString("id");
+                            idMaxPartner = rs.getString("id");
                             stmt = conn.prepareStatement(INSERT_RES_COMPANY);
 
-                            stmt.setString(1, idPartner);
+                            stmt.setString(1, idMaxPartner);
 
                             stmt.executeUpdate();
                         } else {
@@ -144,15 +176,16 @@ public class DaoImplementation implements Signable {
         return user;
     }
 
+    
     /**
-     * Este método busca el usuario en la base de datos, mediante el email y la contraseña. 
-     * Si coincide, devuelve todos los datos del usuario.
+     * Este método busca el usuario en la base de datos, mediante el email y la
+     * contraseña. Si coincide, devuelve todos los datos del usuario.
+     *
      * @param user un objeto usuario
      * @return user , devuelve los datos del usuario.
-     * @throws ServerErrorException excepción de error del servidor. 
+     * @throws ServerErrorException excepción de error del servidor.
      * @throws CredentialErrorException excepción de credenciales incorrectas.
      */
-    
     @Override
     public User getExecuteSignIn(User user) throws ServerErrorException, CredentialErrorException {
         User u = null;
@@ -189,9 +222,9 @@ public class DaoImplementation implements Signable {
 
     }
 
-    
     /**
      * Este método comprueba que si el usuario es existente.
+     *
      * @param email email para comprobarlo si existe en la base de datos.
      * @return existe, saber si el usuario existe o no.
      * @throws ServerErrorException excepción de error de servidor
