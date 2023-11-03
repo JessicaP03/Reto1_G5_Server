@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package model;
 
 import exceptions.CredentialErrorException;
@@ -19,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * Esta clase es la implementación de la interfaz de lógica de negocio.
  * @author Ian.
  */
 public class DaoImplementation implements Signable {
@@ -40,12 +36,21 @@ public class DaoImplementation implements Signable {
     private final String LOGIN_RES_USERS = "SELECT partner_id FROM res_users WHERE login = ? AND password = ?";
     private final String LOGIN_RES_PARTNER = "SELECT name, street, phone, zip FROM res_partner WHERE id = ?";
 
+    
+    /**
+     * Este metodo coge una conexión del pool.
+     * @throws ServerErrorException excepción de error de servidor.
+     */
     public void openConnetion() throws ServerErrorException {
         this.pool = pool.getPool();
 
         conn = pool.getConnection();
     }
 
+    /**
+     * Este metodo devuelve la conexión al pool.
+     * @throws ServerErrorException  excepción de error de servidor.
+     */
     public void closeConnection() throws ServerErrorException {
         try {
             stmt.close();
@@ -55,6 +60,15 @@ public class DaoImplementation implements Signable {
         }
     }
 
+    
+    /**
+     * Este metodo guarda los datos de registro de un usuario en la base de datos de odoo.
+     * @param user un objeto usuario con los datos que queremos guardar.
+     * @return user, devuelve el usuario
+     * @throws UserAlreadyExistsException excepción de usuario existente.
+     * @throws ServerErrorException excepción de error en el servidor.
+     * @throws InsertErrorException  excepción de insertar datos en la base de datos de odoo.
+     */
     @Override
     public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException, InsertErrorException {
         this.openConnetion();
@@ -130,6 +144,15 @@ public class DaoImplementation implements Signable {
         return user;
     }
 
+    /**
+     * Este método busca el usuario en la base de datos, mediante el email y la contraseña. 
+     * Si coincide, devuelve todos los datos del usuario.
+     * @param user un objeto usuario
+     * @return user , devuelve los datos del usuario.
+     * @throws ServerErrorException excepción de error del servidor. 
+     * @throws CredentialErrorException excepción de credenciales incorrectas.
+     */
+    
     @Override
     public User getExecuteSignIn(User user) throws ServerErrorException, CredentialErrorException {
         User u = null;
@@ -166,6 +189,14 @@ public class DaoImplementation implements Signable {
 
     }
 
+    
+    /**
+     * Este método comprueba que si el usuario es existente.
+     * @param email email para comprobarlo si existe en la base de datos.
+     * @return existe, saber si el usuario existe o no.
+     * @throws ServerErrorException excepción de error de servidor
+     * @throws UserAlreadyExistsException excepcion de usuario existente.
+     */
     private boolean comprobarUsuarioExistente(String email) throws ServerErrorException, UserAlreadyExistsException {
         this.openConnetion();
 

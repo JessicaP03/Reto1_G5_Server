@@ -1,6 +1,6 @@
 package model;
 
-//import grupo5.reto1.model.Encapsulator;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,9 +16,9 @@ import java.util.logging.Logger;
  *
  * @author Jason.
  */
-public class Server {
+public class SocketServer {
 
-    final private Logger LOGGER = Logger.getLogger(Server.class.getName());
+    final private Logger LOGGER = Logger.getLogger(SocketServer.class.getName());
 
     final private int PORT = Integer.parseInt(ResourceBundle.getBundle("files.config").getString("port"));
     final private int MAX_USERS = Integer.parseInt(ResourceBundle.getBundle("files.config").getString("max_users"));
@@ -26,8 +26,9 @@ public class Server {
     private boolean serverAbierto = true;
 
     /**
-     * Abre el servidor, y cuando se conecte un usuario creamos un hilo para que
+     * Este método abre el socket del servidor, y cuando se conecte un usuario creamos un hilo para que
      * haga el trabajo.
+     * 
      */
     public void openServer() {
         Socket client = null;
@@ -64,7 +65,7 @@ public class Server {
             }
 
         } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -91,7 +92,7 @@ public class Server {
      * @param args
      */
     public static void main(String[] args) {
-        Server s1 = new Server();
+        SocketServer s1 = new SocketServer();
         s1.openServer();
     }
 

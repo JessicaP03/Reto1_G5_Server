@@ -13,7 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * Esta clase es un hilo, que permite a varios usuario a la vez, acceder a la base de datos de odoo.
  * @author Ian.
  */
 public class WorkingThread extends Thread {
@@ -39,6 +39,11 @@ public class WorkingThread extends Thread {
         this.message = message;
     }
 
+    /**
+     * Este método se utiliza para ejecutar el hilo. En base a la petición que se 
+     * le haya hecho, inicia sesión o registra el usuario.
+     */
+    
     @Override
     public void run() {
 
@@ -84,7 +89,7 @@ public class WorkingThread extends Thread {
             try {
                 oos = new ObjectOutputStream(socket.getOutputStream());
                 oos.writeObject(message);
-                Server.desconectarCliente(this);
+                SocketServer.desconectarCliente(this);
                 ois.close();
                 oos.close();
                 socket.close();
@@ -95,27 +100,5 @@ public class WorkingThread extends Thread {
         }
     }
 
-//    private Socket socketCliente;
-//    private Message respuesta;
-//
-//    public WorkingThread(Socket socketCliente, Message respuesta) {
-//        this.socketCliente = socketCliente;
-//        this.respuesta = respuesta;
-//    }
-//
-//
-//
-//    @Override
-//    public void run() {
-//        ObjectOutputStream oos;
-//
-//        try {
-//            oos = new ObjectOutputStream(socketCliente.getOutputStream());
-//            oos.writeObject(respuesta);
-//        } catch (IOException ex) {
-//            Logger.getLogger(WorkingThread.class.getName()).log(Level.SEVERE, null,ex);
-//        }finally{
-//
-//        }
-//    }
+
 }

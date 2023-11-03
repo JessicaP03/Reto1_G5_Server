@@ -24,6 +24,10 @@ public class Pool {
         connections = new Stack();
     }
 
+    /**
+     * Este método es una factoria de pool
+     * @return pool un pool 
+     */
      public static Pool getPool() {
         if (pool == null) {
             pool = new Pool();
@@ -33,8 +37,8 @@ public class Pool {
     }
 
     /**
-     * Si no existe ninguna conexion libre en el stack crea una nueva y la
-     * devuelve al usuario, si no coje la ultima del esta y la devuelve.
+     * Si no existe ninguna conexión libre en el stack, crea una nueva y la
+     * devuelve al usuario, si no, coje la ultima del esta y la devuelve.
      *
      * @return una conexion a la base de datos.
      * @throws exceptions.ServerErrorException controla un error a la hora de
@@ -63,6 +67,7 @@ public class Pool {
         return con;
     }
 
+    
     /**
      * *
      * Cuando un usuario haya terminado, devuelve la conexion y la guardamos en
@@ -74,8 +79,9 @@ public class Pool {
         connections.push(con);
     }
 
+    
     /**
-     * Cuando el servidor se cierre se cerraran todas las conexiones que se han
+     * Cuando el servidor se cierre, se cerraran todas las conexiones que se han
      * creado.
      *
      * @throws exceptions.ServerErrorException controla un error a la hora de
