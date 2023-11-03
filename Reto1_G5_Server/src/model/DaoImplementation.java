@@ -22,7 +22,7 @@ public class DaoImplementation implements Signable {
     private Connection conn = null;
     private PreparedStatement stmt;
     private static Pool pool;
-    private static final Logger LOG = Logger.getLogger(DaoImplementation.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DaoImplementation.class.getName());
 
     /**
      * Sentencias SQL para la base de datos de odoo.
@@ -38,7 +38,7 @@ public class DaoImplementation implements Signable {
 
     private final String LOGIN_RES_USERS = "SELECT partner_id FROM res_users WHERE login = ? AND password = ?";
     private final String LOGIN_RES_PARTNER = "SELECT name, street, phone, zip FROM res_partner WHERE id = ?";
-    
+
     /**
      * Este metodo coge una conexión del pool.
      *
@@ -48,6 +48,8 @@ public class DaoImplementation implements Signable {
         this.pool = pool.getPool();
 
         conn = pool.getConnection();
+
+        LOGGER.info("Se ha abierto conexion con los siguientes datos\nPool: " + pool + "\nConexion: " + conn);
     }
 
     /**
@@ -134,7 +136,7 @@ public class DaoImplementation implements Signable {
                 if (stmt.executeUpdate() == 1) {
                     String idUser = null;
 
-                    stmt = conn.prepareStatement(SELECT_MAX_PARTNER);
+                    stmt = conn.prepareStatement(SELECT_MAX_USERS);
                     rs = stmt.executeQuery();
 
                     if (rs.next()) {
@@ -151,20 +153,9 @@ public class DaoImplementation implements Signable {
 
                     if (stmt.executeUpdate() == 1) {
 
-                        String idMaxPartner = null;
-                        stmt = conn.prepareStatement(SELECT_MAX_USERS);
-                        rs = stmt.executeQuery();
-
-                        if (rs.next()) {
-                            idMaxPartner = rs.getString("id");
-                            stmt = conn.prepareStatement(INSERT_RES_COMPANY);
-
-                            stmt.setString(1, idMaxPartner);
-
-                            stmt.executeUpdate();
-                        } else {
-                            throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID partner.");
-                        }
+                        stmt = conn.prepareStatement(INSERT_RES_COMPANY);
+                        stmt.setString(1, idUser);
+                        stmt.executeUpdate();
 
                     }
                 }
@@ -176,7 +167,6 @@ public class DaoImplementation implements Signable {
         return user;
     }
 
-    
     /**
      * Este método busca el usuario en la base de datos, mediante el email y la
      * contraseña. Si coincide, devuelve todos los datos del usuario.
@@ -195,6 +185,9 @@ public class DaoImplementation implements Signable {
             stmt = conn.prepareStatement(LOGIN_RES_USERS);
             stmt.setString(1, user.getEmail());
             stmt.setString(2, user.getPasswd());
+
+            LOGGER.info("Comprobando email y contraseña: " + stmt);
+
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -202,12 +195,15 @@ public class DaoImplementation implements Signable {
 
                 stmt = conn.prepareStatement(LOGIN_RES_PARTNER);
                 stmt.setString(1, partner_id);
+
+                LOGGER.info("Buscando los datos del usuario: " + stmt);
+
                 rs = stmt.executeQuery();
 
                 if (rs.next()) {
                     u = new User();
                     u.setName(rs.getString("name"));
-                    u.setAddres(rs.getString("street"));
+                    u.setAddress(rs.getString("street"));
                     u.setPhone(rs.getInt("phone"));
                     u.setZip(rs.getInt("zip"));
                 }

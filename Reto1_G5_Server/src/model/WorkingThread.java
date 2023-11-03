@@ -13,7 +13,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Esta clase es un hilo, que permite a varios usuario a la vez, acceder a la base de datos de odoo.
+ * Esta clase es un hilo, que permite a varios usuario a la vez, acceder a la
+ * base de datos de odoo.
+ *
  * @author Ian.
  */
 public class WorkingThread extends Thread {
@@ -40,31 +42,27 @@ public class WorkingThread extends Thread {
     }
 
     /**
-     * Este método se utiliza para ejecutar el hilo. En base a la petición que se 
-     * le haya hecho, inicia sesión o registra el usuario.
+     * Este método se utiliza para ejecutar el hilo. En base a la petición que
+     * se le haya hecho, inicia sesión o registra el usuario.
      */
-    
     @Override
     public void run() {
-
+        LOGGER.info("Se ha creado un hilo");
         try {
             ois = new ObjectInputStream(socket.getInputStream());
-            DaoFactory factoria = new DaoFactory();
-            sign = factoria.getDao();
+            sign = DaoFactory.getDao();
 
             message = (Message) ois.readObject();
 
+            LOGGER.info("Peticion del servidor: " + message.getMessageType());
             switch (message.getMessageType()) {
                 case SIGNIN_REQUEST:
-                    LOGGER.info("El hilo ha recibido un SIGN IN request");
                     user = sign.getExecuteSignIn(message.getUser());
                     message.setUser(user);
                     message.setMessageType(MessageType.OK_RESPONSE);
                     break;
 
                 case SIGNUP_REQUEST:
-                    LOGGER.info("El hilo ha recibido un SIGN UP request");
-
                     sign.getExecuteSignUp(message.getUser());
                     message.setUser(user);
                     message.setMessageType(MessageType.OK_RESPONSE);
@@ -92,13 +90,13 @@ public class WorkingThread extends Thread {
                 SocketServer.desconectarCliente(this);
                 ois.close();
                 oos.close();
+
+                LOGGER.info("Se ha asesinado el hilo");
                 socket.close();
+
             } catch (IOException ex) {
                 Logger.getLogger(WorkingThread.class.getName()).log(Level.SEVERE, null, ex);
             }
-
         }
     }
-
-
 }

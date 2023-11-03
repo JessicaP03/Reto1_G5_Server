@@ -1,6 +1,5 @@
 package model;
 
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -18,7 +17,7 @@ import java.util.logging.Logger;
  */
 public class SocketServer {
 
-    final private Logger LOGGER = Logger.getLogger(SocketServer.class.getName());
+    final private static Logger LOGGER = Logger.getLogger(SocketServer.class.getName());
 
     final private int PORT = Integer.parseInt(ResourceBundle.getBundle("files.config").getString("port"));
     final private int MAX_USERS = Integer.parseInt(ResourceBundle.getBundle("files.config").getString("max_users"));
@@ -26,9 +25,9 @@ public class SocketServer {
     private boolean serverAbierto = true;
 
     /**
-     * Este método abre el socket del servidor, y cuando se conecte un usuario creamos un hilo para que
-     * haga el trabajo.
-     * 
+     * Este método abre el socket del servidor, y cuando se conecte un usuario
+     * creamos un hilo para que haga el trabajo.
+     *
      */
     public void openServer() {
         Socket client = null;
@@ -37,9 +36,10 @@ public class SocketServer {
         ObjectInputStream ois = null;
 
         try {
-            LOGGER.info("El servidor se ha abierto");
+
             server = new ServerSocket(PORT);
 
+            LOGGER.info("El servidor se ha abierto con los siguientes parametros: ");
             LOGGER.info("Puerto: " + PORT);
             LOGGER.info("Abierto?: " + serverAbierto);
             LOGGER.info("numUsers: " + num_users);
@@ -74,6 +74,7 @@ public class SocketServer {
      * conectados al mismo tiempo.
      */
     public static synchronized void conectarCliente(WorkingThread w) {
+        LOGGER.info("Usuarios++");
         num_users++;
     }
 
@@ -82,6 +83,7 @@ public class SocketServer {
      * conectados al mismo tiempo.
      */
     public static synchronized void desconectarCliente(WorkingThread w) {
+        LOGGER.info("Usuarios--");
         num_users--;
     }
 
