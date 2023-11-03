@@ -7,6 +7,7 @@ package model;
 
 import exceptions.CredentialErrorException;
 import exceptions.InsertErrorException;
+import exceptions.SelectErrorException;
 import exceptions.ServerErrorException;
 import exceptions.UserAlreadyExistsException;
 import java.sql.Connection;
@@ -35,6 +36,9 @@ public class DaoImplementation implements Signable {
     private final String SELECT_MAX_USERS = "SELECT max(id) as id from res_users";
     private final String SELECT_MAX_PARTNER = "SELECT max(id) as id from res_partner";
     private final String USUARIO_EXISTE = "SELECT login from res_users where login =?";
+
+    private final String LOGIN_RES_USERS = "SELECT partner_id FROM res_users WHERE login = ? AND password = ?";
+    private final String LOGIN_RES_PARTNER = "SELECT name, street, phone, zip FROM res_partner WHERE id = ?";
 
     public void openConnetion() throws ServerErrorException {
         this.pool = pool.getPool();
@@ -128,8 +132,38 @@ public class DaoImplementation implements Signable {
 
     @Override
     public User getExecuteSignIn(User user) throws ServerErrorException, CredentialErrorException {
+        User u = null;
+        this.openConnetion();
 
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try {
+            stmt = conn.prepareStatement(LOGIN_RES_USERS);
+            stmt.setString(1, user.getEmail());
+            stmt.setString(2, user.getPasswd());
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                String partner_id = rs.getString("partner_id");
+
+                stmt = conn.prepareStatement(LOGIN_RES_PARTNER);
+                stmt.setString(1, partner_id);
+                rs = stmt.executeQuery();
+
+                if (rs.next()) {
+                    u = new User();
+                    u.setName(rs.getString("name"));
+                    u.setAddres(rs.getString("street"));
+                    u.setPhone(rs.getInt("phone"));
+                    u.setZip(rs.getInt("zip"));
+                }
+            }
+
+        } catch (SQLException ex) {
+            throw new CredentialErrorException("Ha ocurrido un error al iniciar sesion");
+        }
+
+        this.closeConnection();
+        return u;
+
     }
 
     private boolean comprobarUsuarioExistente(String email) throws ServerErrorException, UserAlreadyExistsException {

@@ -39,6 +39,11 @@ public class Server {
             LOGGER.info("El servidor se ha abierto");
             server = new ServerSocket(PORT);
 
+            LOGGER.info("Puerto: " + PORT);
+            LOGGER.info("Abierto?: " + serverAbierto);
+            LOGGER.info("numUsers: " + num_users);
+            LOGGER.info("MAX_USERS: " + MAX_USERS);
+
             while (serverAbierto) {
 
                 if (num_users < MAX_USERS) {

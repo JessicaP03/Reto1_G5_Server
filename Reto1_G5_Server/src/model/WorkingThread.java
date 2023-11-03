@@ -18,6 +18,8 @@ import java.util.logging.Logger;
  */
 public class WorkingThread extends Thread {
 
+    final private Logger LOGGER = Logger.getLogger(WorkingThread.class.getName());
+
     private ObjectOutputStream oos = null;
     private ObjectInputStream ois = null;
     private Socket socket = null;
@@ -34,7 +36,7 @@ public class WorkingThread extends Thread {
     }
 
     WorkingThread(Message message) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        this.message = message;
     }
 
     @Override
@@ -49,12 +51,15 @@ public class WorkingThread extends Thread {
 
             switch (message.getMessageType()) {
                 case SIGNIN_REQUEST:
+                    LOGGER.info("El hilo ha recibido un SIGN IN request");
                     user = sign.getExecuteSignIn(message.getUser());
                     message.setUser(user);
                     message.setMessageType(MessageType.OK_RESPONSE);
                     break;
 
                 case SIGNUP_REQUEST:
+                    LOGGER.info("El hilo ha recibido un SIGN UP request");
+
                     sign.getExecuteSignUp(message.getUser());
                     message.setUser(user);
                     message.setMessageType(MessageType.OK_RESPONSE);
@@ -74,7 +79,7 @@ public class WorkingThread extends Thread {
         } catch (UserNotFoundException ex) {
             message.setMessageType(MessageType.USER_NOT_FOUND_RESPONSE);
         } catch (InsertErrorException ex) {
-            message.setMessageType(MessageType.ERROR_RESPONSE);
+            message.setMessageType(MessageType.USER_ALREADY_EXISTS_RESPONSE);
         } finally {
             try {
                 oos = new ObjectOutputStream(socket.getOutputStream());
