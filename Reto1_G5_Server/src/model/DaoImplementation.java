@@ -32,7 +32,7 @@ public class DaoImplementation implements Signable {
     private final String INSERT_RES_COMPANY = "INSERT INTO res_company_users_rel(cid, user_id) VALUES (1, ?)";
     private final String INSERT_RES_GROUPS = "INSERT INTO res_groups_users_rel(gid, uid) VALUES (16, ?), (26, ?), (28,?), (31,?)";
     private final String SELECT_MAX_USERS = "SELECT max(id) as id from res_users";
-    private final String SELECT_IDPARTNER = "SELECT id from res_partner";
+    //private final String SELECT_IDPARTNER = "SELECT id from res_partner";
     private final String SELECT_MAX_PARTNER = "SELECT max(id) as id from res_partner";
     private final String USUARIO_EXISTE = "SELECT login from res_users where login =?";
 
@@ -45,11 +45,13 @@ public class DaoImplementation implements Signable {
      * @throws ServerErrorException excepción de error de servidor.
      */
     public void openConnetion() throws ServerErrorException {
-        this.pool = pool.getPool();
+        try {
+            pool = Pool.getPool();
+            conn = pool.getConnection();
 
-        conn = pool.getConnection();
-
-        LOGGER.info("Se ha abierto conexion con los siguientes datos\nPool: " + pool + "\nConexion: " + conn);
+        } catch (ServerErrorException ex) {
+            throw new ServerErrorException("Ha ocurrido un error a la hora de abrir la conexcion");
+        }
     }
 
     /**
@@ -62,7 +64,7 @@ public class DaoImplementation implements Signable {
             stmt.close();
             pool.closeServer();
         } catch (SQLException ex) {
-            Logger.getLogger(DaoImplementation.class.getName()).log(Level.SEVERE, null, ex);
+            throw new ServerErrorException("Ha ocurrido un error a la hora de cerrar la conexcion");
         }
     }
 
@@ -79,9 +81,11 @@ public class DaoImplementation implements Signable {
      */
     @Override
     public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException, InsertErrorException {
+        LOGGER.info("Entro en el DAOImplementacion SIGN UP");
+
         this.openConnetion();
-        String partnerId = null;
-        int maxIdPartner = 0;
+
+        int partnerId = 0;
         ResultSet rs = null;
 
         try {
@@ -90,23 +94,24 @@ public class DaoImplementation implements Signable {
             }
 
             stmt = conn.prepareStatement(SELECT_MAX_PARTNER);
+
             rs = stmt.executeQuery();
 
             if (rs.next()) {
-                maxIdPartner = rs.getInt("id");
+                partnerId = rs.getInt("id");
 
-                if (maxIdPartner == 0) {
+                if (partnerId == 0) {
                     throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
                 }
 
             }
 
             stmt = conn.prepareStatement(INSERT_RES_PARTNER);
-            stmt.setInt(1, maxIdPartner + 1);
+            stmt.setInt(1, partnerId + 1);
             stmt.setInt(2, user.getCompany());
             stmt.setDate(3, Date.valueOf(user.getCreateDate()));
             stmt.setString(4, user.getName());
-            stmt.setInt(5, maxIdPartner + 1);
+            stmt.setInt(5, partnerId + 1);
             stmt.setString(6, user.getAddress());
             stmt.setInt(7, user.getZip());
             stmt.setInt(8, user.getPhone());
@@ -114,47 +119,38 @@ public class DaoImplementation implements Signable {
 
             if (stmt.executeUpdate() == 1) {
 
-                stmt = conn.prepareStatement(SELECT_IDPARTNER);
-                rs = stmt.executeQuery();
-
-                if (rs.next()) {
-                    partnerId = rs.getString("id");
-
-                    if (partnerId == null) {
-                        throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
-                    }
-
-                }
                 stmt = conn.prepareStatement(INSERT_RES_USERS);
                 stmt.setInt(1, user.getCompany());
-                stmt.setString(2, partnerId);
+                stmt.setInt(2, partnerId + 1);
                 stmt.setDate(3, Date.valueOf(user.getCreateDate()));
                 stmt.setString(4, user.getEmail());
                 stmt.setString(5, user.getPasswd());
                 stmt.setDate(6, Date.valueOf(user.getWriteDate()));
 
                 if (stmt.executeUpdate() == 1) {
-                    String idUser = null;
+                    int idUser = 0;
 
-                    stmt = conn.prepareStatement(SELECT_MAX_USERS);
                     rs = stmt.executeQuery();
 
                     if (rs.next()) {
-                        idUser = rs.getString("id");
+                        idUser = rs.getInt("id");
 
-                        if (idUser == null) {
+                        if (idUser == 0) {
                             throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
                         }
 
                     }
                     stmt = conn.prepareStatement(INSERT_RES_GROUPS);
 
-                    stmt.setString(1, idUser);
+                    stmt.setInt(1, idUser);
+                    stmt.setInt(2, idUser);
+                    stmt.setInt(3, idUser);
+                    stmt.setInt(4, idUser);
 
                     if (stmt.executeUpdate() == 1) {
 
                         stmt = conn.prepareStatement(INSERT_RES_COMPANY);
-                        stmt.setString(1, idUser);
+                        stmt.setInt(1, idUser);
                         stmt.executeUpdate();
 
                     }
@@ -182,31 +178,33 @@ public class DaoImplementation implements Signable {
         this.openConnetion();
 
         try {
+            LOGGER.info("Entra en el DAOImplementacion SIGN IN");
+
             stmt = conn.prepareStatement(LOGIN_RES_USERS);
             stmt.setString(1, user.getEmail());
             stmt.setString(2, user.getPasswd());
 
-            LOGGER.info("Comprobando email y contraseña: " + stmt);
-
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
-                String partner_id = rs.getString("partner_id");
+                int partner_id = rs.getInt("partner_id");
 
                 stmt = conn.prepareStatement(LOGIN_RES_PARTNER);
-                stmt.setString(1, partner_id);
+                stmt.setInt(1, partner_id);
 
-                LOGGER.info("Buscando los datos del usuario: " + stmt);
+                ResultSet rs2 = stmt.executeQuery();
 
-                rs = stmt.executeQuery();
-
-                if (rs.next()) {
+                if (rs2.next()) {
                     u = new User();
-                    u.setName(rs.getString("name"));
-                    u.setAddress(rs.getString("street"));
-                    u.setPhone(rs.getInt("phone"));
-                    u.setZip(rs.getInt("zip"));
+                    u.setEmail(user.getEmail());
+                    u.setPasswd(user.getPasswd());
+                    u.setName(rs2.getString("name"));
+                    u.setAddress(rs2.getString("street"));
+                    u.setPhone(rs2.getInt("phone"));
+                    u.setZip(rs2.getInt("zip"));
                 }
+            } else {
+                throw new CredentialErrorException("El usuario y la contraseña no coinciden");
             }
 
         } catch (SQLException ex) {
@@ -227,8 +225,6 @@ public class DaoImplementation implements Signable {
      * @throws UserAlreadyExistsException excepcion de usuario existente.
      */
     private boolean comprobarUsuarioExistente(String email) throws ServerErrorException, UserAlreadyExistsException {
-        this.openConnetion();
-
         boolean existe = false;
         ResultSet rs = null;
         try {
@@ -245,7 +241,6 @@ public class DaoImplementation implements Signable {
             throw new UserAlreadyExistsException("Ese usuario ya existe");
         }
 
-        this.closeConnection();
         return existe;
     }
 

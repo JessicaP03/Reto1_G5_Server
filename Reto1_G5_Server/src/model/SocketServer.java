@@ -39,11 +39,7 @@ public class SocketServer {
 
             server = new ServerSocket(PORT);
 
-            LOGGER.info("El servidor se ha abierto con los siguientes parametros: ");
-            LOGGER.info("Puerto: " + PORT);
-            LOGGER.info("Abierto?: " + serverAbierto);
-            LOGGER.info("numUsers: " + num_users);
-            LOGGER.info("MAX_USERS: " + MAX_USERS);
+            LOGGER.log(Level.INFO, "El servidor se ha abierto con los siguientes parametros:\nPuerto: {0}\nAbierto?: {1}\nnumUsers: {2}\nMAX_USERS: {3}", new Object[]{PORT, serverAbierto, num_users, MAX_USERS});
 
             while (serverAbierto) {
 
@@ -53,8 +49,8 @@ public class SocketServer {
                     LOGGER.info("Un cliente se ha conectado.");
 
                     WorkingThread wt = new WorkingThread(client);
-                    wt.run();
                     conectarCliente(wt);
+                    wt.run();
 
                 } else {
                     oos = new ObjectOutputStream(client.getOutputStream());

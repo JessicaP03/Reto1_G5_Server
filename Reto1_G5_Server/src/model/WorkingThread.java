@@ -54,16 +54,19 @@ public class WorkingThread extends Thread {
 
             message = (Message) ois.readObject();
 
-            LOGGER.info("Peticion del servidor: " + message.getMessageType());
             switch (message.getMessageType()) {
                 case SIGNIN_REQUEST:
+                    LOGGER.info("Peticion del servidor: " + message.getMessageType() + " --> " + "SIGNIN_REQUEST");
+
                     user = sign.getExecuteSignIn(message.getUser());
                     message.setUser(user);
                     message.setMessageType(MessageType.OK_RESPONSE);
                     break;
 
                 case SIGNUP_REQUEST:
-                    sign.getExecuteSignUp(message.getUser());
+                    LOGGER.info("Peticion del servidor: " + message.getMessageType() + " --> " + "SIGNUP_REQUEST");
+
+                    user = sign.getExecuteSignUp(message.getUser());
                     message.setUser(user);
                     message.setMessageType(MessageType.OK_RESPONSE);
                     break;
@@ -91,7 +94,7 @@ public class WorkingThread extends Thread {
                 ois.close();
                 oos.close();
 
-                LOGGER.info("Se ha asesinado el hilo");
+                LOGGER.info("Se ha matado el hilo");
                 socket.close();
 
             } catch (IOException ex) {
