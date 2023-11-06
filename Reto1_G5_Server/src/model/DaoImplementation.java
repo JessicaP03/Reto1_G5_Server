@@ -1,29 +1,19 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package model;
 
 import exceptions.CredentialErrorException;
 import exceptions.InsertErrorException;
 import exceptions.ServerErrorException;
 import exceptions.UserAlreadyExistsException;
-import exceptions.UserNotFoundException;
-import model.Signable;
-import model.User;
 import java.sql.Connection;
 import java.sql.Date;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Esta clase es la implementación de la interfaz de lógica de negocio.
  *
  * @author Ian.
  */
@@ -32,8 +22,11 @@ public class DaoImplementation implements Signable {
     private Connection conn = null;
     private PreparedStatement stmt;
     private static Pool pool;
-    private static final Logger LOG = Logger.getLogger(DaoImplementation.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(DaoImplementation.class.getName());
 
+    /**
+     * Sentencias SQL para la base de datos de odoo.
+     */
     private final String INSERT_RES_USERS = "INSERT INTO res_users(company_id, partner_id, create_date, login, password, create_uid, write_uid, write_date, notification_type) VALUES ( ?, ?, ?, ?, ?, 2, 2, ?, 'email');";
     private final String INSERT_RES_PARTNER = "INSERT INTO res_partner(id,company_id, create_date, name, commercial_partner_id, street, zip, phone, date, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, now(), ?)";
     private final String INSERT_RES_COMPANY = "INSERT INTO res_company_users_rel(cid, user_id) VALUES (1, ?)";
@@ -43,12 +36,27 @@ public class DaoImplementation implements Signable {
     private final String SELECT_MAX_PARTNER = "SELECT max(id) as id from res_partner";
     private final String USUARIO_EXISTE = "SELECT login from res_users where login =?";
 
+    private final String LOGIN_RES_USERS = "SELECT partner_id FROM res_users WHERE login = ? AND password = ?";
+    private final String LOGIN_RES_PARTNER = "SELECT name, street, phone, zip FROM res_partner WHERE id = ?";
+
+    /**
+     * Este metodo coge una conexión del pool.
+     *
+     * @throws ServerErrorException excepción de error de servidor.
+     */
     public void openConnetion() throws ServerErrorException {
         this.pool = pool.getPool();
 
         conn = pool.getConnection();
+
+        LOGGER.info("Se ha abierto conexion con los siguientes datos\nPool: " + pool + "\nConexion: " + conn);
     }
 
+    /**
+     * Este metodo devuelve la conexión al pool.
+     *
+     * @throws ServerErrorException excepción de error de servidor.
+     */
     public void closeConnection() throws ServerErrorException {
         try {
             stmt.close();
@@ -58,6 +66,17 @@ public class DaoImplementation implements Signable {
         }
     }
 
+    /**
+     * Este metodo guarda los datos de registro de un usuario en la base de
+     * datos de odoo.
+     *
+     * @param user un objeto usuario con los datos que queremos guardar.
+     * @return user, devuelve el usuario
+     * @throws UserAlreadyExistsException excepción de usuario existente.
+     * @throws ServerErrorException excepción de error en el servidor.
+     * @throws InsertErrorException excepción de insertar datos en la base de
+     * datos de odoo.
+     */
     @Override
     public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException, InsertErrorException {
         this.openConnetion();
@@ -117,7 +136,7 @@ public class DaoImplementation implements Signable {
                 if (stmt.executeUpdate() == 1) {
                     String idUser = null;
 
-                    stmt = conn.prepareStatement(SELECT_MAX_PARTNER);
+                    stmt = conn.prepareStatement(SELECT_MAX_USERS);
                     rs = stmt.executeQuery();
 
                     if (rs.next()) {
@@ -134,20 +153,9 @@ public class DaoImplementation implements Signable {
 
                     if (stmt.executeUpdate() == 1) {
 
-                        String idMaxPartner = null;
-                        stmt = conn.prepareStatement(SELECT_MAX_USERS);
-                        rs = stmt.executeQuery();
-
-                        if (rs.next()) {
-                            idMaxPartner = rs.getString("id");
-                            stmt = conn.prepareStatement(INSERT_RES_COMPANY);
-
-                            stmt.setString(1, idMaxPartner);
-
-                            stmt.executeUpdate();
-                        } else {
-                            throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID partner.");
-                        }
+                        stmt = conn.prepareStatement(INSERT_RES_COMPANY);
+                        stmt.setString(1, idUser);
+                        stmt.executeUpdate();
 
                     }
                 }
@@ -159,12 +167,65 @@ public class DaoImplementation implements Signable {
         return user;
     }
 
+    /**
+     * Este método busca el usuario en la base de datos, mediante el email y la
+     * contraseña. Si coincide, devuelve todos los datos del usuario.
+     *
+     * @param user un objeto usuario
+     * @return user , devuelve los datos del usuario.
+     * @throws ServerErrorException excepción de error del servidor.
+     * @throws CredentialErrorException excepción de credenciales incorrectas.
+     */
     @Override
     public User getExecuteSignIn(User user) throws ServerErrorException, CredentialErrorException {
+        User u = null;
+        this.openConnetion();
 
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        try {
+            stmt = conn.prepareStatement(LOGIN_RES_USERS);
+            stmt.setString(1, user.getEmail());
+            stmt.setString(2, user.getPasswd());
+
+            LOGGER.info("Comprobando email y contraseña: " + stmt);
+
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                String partner_id = rs.getString("partner_id");
+
+                stmt = conn.prepareStatement(LOGIN_RES_PARTNER);
+                stmt.setString(1, partner_id);
+
+                LOGGER.info("Buscando los datos del usuario: " + stmt);
+
+                rs = stmt.executeQuery();
+
+                if (rs.next()) {
+                    u = new User();
+                    u.setName(rs.getString("name"));
+                    u.setAddress(rs.getString("street"));
+                    u.setPhone(rs.getInt("phone"));
+                    u.setZip(rs.getInt("zip"));
+                }
+            }
+
+        } catch (SQLException ex) {
+            throw new CredentialErrorException("Ha ocurrido un error al iniciar sesion");
+        }
+
+        this.closeConnection();
+        return u;
+
     }
 
+    /**
+     * Este método comprueba que si el usuario es existente.
+     *
+     * @param email email para comprobarlo si existe en la base de datos.
+     * @return existe, saber si el usuario existe o no.
+     * @throws ServerErrorException excepción de error de servidor
+     * @throws UserAlreadyExistsException excepcion de usuario existente.
+     */
     private boolean comprobarUsuarioExistente(String email) throws ServerErrorException, UserAlreadyExistsException {
         this.openConnetion();
 

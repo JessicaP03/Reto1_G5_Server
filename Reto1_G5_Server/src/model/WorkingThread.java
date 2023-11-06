@@ -13,10 +13,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * Esta clase es un hilo, que permite a varios usuario a la vez, acceder a la
+ * base de datos de odoo.
  *
  * @author Ian.
  */
 public class WorkingThread extends Thread {
+
+    final private Logger LOGGER = Logger.getLogger(WorkingThread.class.getName());
 
     private ObjectOutputStream oos = null;
     private ObjectInputStream ois = null;
@@ -33,16 +37,24 @@ public class WorkingThread extends Thread {
         this.socket = socket;
     }
 
+    WorkingThread(Message message) {
+        this.message = message;
+    }
+
+    /**
+     * Este método se utiliza para ejecutar el hilo. En base a la petición que
+     * se le haya hecho, inicia sesión o registra el usuario.
+     */
     @Override
     public void run() {
-
+        LOGGER.info("Se ha creado un hilo");
         try {
             ois = new ObjectInputStream(socket.getInputStream());
-            DaoFactory factoria = new DaoFactory();
-            sign = factoria.getDao();
+            sign = DaoFactory.getDao();
 
             message = (Message) ois.readObject();
 
+            LOGGER.info("Peticion del servidor: " + message.getMessageType());
             switch (message.getMessageType()) {
                 case SIGNIN_REQUEST:
                     user = sign.getExecuteSignIn(message.getUser());
@@ -70,43 +82,21 @@ public class WorkingThread extends Thread {
         } catch (UserNotFoundException ex) {
             message.setMessageType(MessageType.USER_NOT_FOUND_RESPONSE);
         } catch (InsertErrorException ex) {
-            message.setMessageType(MessageType.ERROR_RESPONSE);
+            message.setMessageType(MessageType.USER_ALREADY_EXISTS_RESPONSE);
         } finally {
             try {
                 oos = new ObjectOutputStream(socket.getOutputStream());
                 oos.writeObject(message);
-                Server.desconectarCliente(this);
+                SocketServer.desconectarCliente(this);
                 ois.close();
                 oos.close();
+
+                LOGGER.info("Se ha asesinado el hilo");
                 socket.close();
+
             } catch (IOException ex) {
                 Logger.getLogger(WorkingThread.class.getName()).log(Level.SEVERE, null, ex);
             }
-
         }
     }
-
-//    private Socket socketCliente;
-//    private Message respuesta;
-//
-//    public WorkingThread(Socket socketCliente, Message respuesta) {
-//        this.socketCliente = socketCliente;
-//        this.respuesta = respuesta;
-//    }
-//
-//
-//
-//    @Override
-//    public void run() {
-//        ObjectOutputStream oos;
-//
-//        try {
-//            oos = new ObjectOutputStream(socketCliente.getOutputStream());
-//            oos.writeObject(respuesta);
-//        } catch (IOException ex) {
-//            Logger.getLogger(WorkingThread.class.getName()).log(Level.SEVERE, null,ex);
-//        }finally{
-//
-//        }
-//    }
 }
