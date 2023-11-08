@@ -29,7 +29,7 @@ public class Pool {
     }
 
     /**
-     * Este método es una factoria de pool
+     * Este método es para hacer la clase Singeltone
      *
      * @return pool un pool
      */

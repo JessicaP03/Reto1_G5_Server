@@ -1,5 +1,6 @@
 package model;
 
+import exceptions.ServerErrorException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -8,6 +9,7 @@ import java.net.Socket;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.scene.control.Alert;
 
 /**
  * Esta clase crea el servidor donde los usuarios se podran conectar para hacer
@@ -50,7 +52,7 @@ public class SocketServer {
 
                     WorkingThread wt = new WorkingThread(client);
                     conectarCliente(wt);
-                    wt.run();
+                    wt.start();
 
                 } else {
                     oos = new ObjectOutputStream(client.getOutputStream());
@@ -62,6 +64,14 @@ public class SocketServer {
 
         } catch (IOException ex) {
             Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                ois.close();
+                oos.flush();
+                oos.close();
+            } catch (IOException ex) {
+                Logger.getLogger(SocketServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 

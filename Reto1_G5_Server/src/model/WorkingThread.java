@@ -1,10 +1,8 @@
 package model;
 
 import exceptions.CredentialErrorException;
-import exceptions.InsertErrorException;
 import exceptions.ServerErrorException;
 import exceptions.UserAlreadyExistsException;
-import exceptions.UserNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -46,7 +44,7 @@ public class WorkingThread extends Thread {
      * se le haya hecho, inicia sesión o registra el usuario.
      */
     @Override
-    public void run() {
+    public void start() {
         LOGGER.info("Se ha creado un hilo");
         try {
             ois = new ObjectInputStream(socket.getInputStream());
@@ -81,10 +79,6 @@ public class WorkingThread extends Thread {
         } catch (CredentialErrorException ex) {
             message.setMessageType(MessageType.CREDENTIAL_ERROR);
         } catch (UserAlreadyExistsException ex) {
-            message.setMessageType(MessageType.USER_ALREADY_EXISTS_RESPONSE);
-        } catch (UserNotFoundException ex) {
-            message.setMessageType(MessageType.USER_NOT_FOUND_RESPONSE);
-        } catch (InsertErrorException ex) {
             message.setMessageType(MessageType.USER_ALREADY_EXISTS_RESPONSE);
         } finally {
             try {

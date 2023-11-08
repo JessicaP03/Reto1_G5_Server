@@ -1,7 +1,6 @@
 package model;
 
 import exceptions.CredentialErrorException;
-import exceptions.InsertErrorException;
 import exceptions.ServerErrorException;
 import exceptions.UserAlreadyExistsException;
 import java.sql.Connection;
@@ -9,7 +8,6 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -80,7 +78,7 @@ public class DaoImplementation implements Signable {
      * datos de odoo.
      */
     @Override
-    public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException, InsertErrorException {
+    public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException {
         LOGGER.info("Entro en el DAOImplementacion SIGN UP");
 
         this.openConnetion();
@@ -90,18 +88,18 @@ public class DaoImplementation implements Signable {
 
         try {
             if (comprobarUsuarioExistente(user.getEmail())) {
-                throw new UserAlreadyExistsException(MessageType.USER_ALREADY_EXISTS_RESPONSE + "");
+                throw new UserAlreadyExistsException("El usuario " + user.getEmail() + " ya existe.");
             }
 
             stmt = conn.prepareStatement(SELECT_MAX_PARTNER);
-
             rs = stmt.executeQuery();
 
             if (rs.next()) {
                 partnerId = rs.getInt("id");
 
                 if (partnerId == 0) {
-                    throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
+                    //throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
+                    partnerId = 1;
                 }
 
             }
@@ -130,13 +128,15 @@ public class DaoImplementation implements Signable {
                 if (stmt.executeUpdate() == 1) {
                     int idUser = 0;
 
+                    stmt = conn.prepareStatement(SELECT_MAX_USERS);
                     rs = stmt.executeQuery();
 
                     if (rs.next()) {
                         idUser = rs.getInt("id");
 
                         if (idUser == 0) {
-                            throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
+                            //throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
+                            idUser = 1;
                         }
 
                     }
@@ -204,7 +204,8 @@ public class DaoImplementation implements Signable {
                     u.setZip(rs2.getInt("zip"));
                 }
             } else {
-                throw new CredentialErrorException("El usuario y la contraseña no coinciden");
+                //    throw new CredentialErrorException("El email y la contraseña no coinciden");
+                throw new CredentialErrorException("El email: " + user.getEmail() + " y/o la contraseña:  " + user.getPasswd() + " no son correctas.");
             }
 
         } catch (SQLException ex) {
@@ -238,10 +239,8 @@ public class DaoImplementation implements Signable {
             }
 
         } catch (SQLException ex) {
-            throw new UserAlreadyExistsException("Ese usuario ya existe");
+            throw new UserAlreadyExistsException("El usuario con el email: + " + email + " ya existe");
         }
-
         return existe;
     }
-
 }
