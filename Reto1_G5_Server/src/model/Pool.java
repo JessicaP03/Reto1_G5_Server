@@ -19,26 +19,12 @@ public class Pool {
     final private Logger LOGGER = Logger.getLogger(WorkingThread.class.getName());
 
     private static Stack<Connection> connections = null;
-    private static Pool pool;
 
     /**
      * Es el constructor del pool
      */
     public Pool() {
         connections = new Stack();
-    }
-
-    /**
-     * Este método es para hacer la clase Singeltone
-     *
-     * @return pool un pool
-     */
-    public static Pool getPool() {
-        if (pool == null) {
-            pool = new Pool();
-        }
-
-        return pool;
     }
 
     /**

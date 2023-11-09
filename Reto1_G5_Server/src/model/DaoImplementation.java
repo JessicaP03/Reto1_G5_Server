@@ -44,7 +44,7 @@ public class DaoImplementation implements Signable {
      */
     public void openConnetion() throws ServerErrorException {
         try {
-            pool = Pool.getPool();
+            pool = PoolFactory.getPool();
             conn = pool.getConnection();
 
         } catch (ServerErrorException ex) {
@@ -74,8 +74,6 @@ public class DaoImplementation implements Signable {
      * @return user, devuelve el usuario
      * @throws UserAlreadyExistsException excepción de usuario existente.
      * @throws ServerErrorException excepción de error en el servidor.
-     * @throws InsertErrorException excepción de insertar datos en la base de
-     * datos de odoo.
      */
     @Override
     public User getExecuteSignUp(User user) throws UserAlreadyExistsException, ServerErrorException {
@@ -98,7 +96,6 @@ public class DaoImplementation implements Signable {
                 partnerId = rs.getInt("id");
 
                 if (partnerId == 0) {
-                    //throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
                     partnerId = 1;
                 }
 
@@ -135,7 +132,6 @@ public class DaoImplementation implements Signable {
                         idUser = rs.getInt("id");
 
                         if (idUser == 0) {
-                            //throw new InsertErrorException("Ha ocurrido un error en la inserción, porque falta el ID usuario.");
                             idUser = 1;
                         }
 
