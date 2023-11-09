@@ -2,7 +2,7 @@ package model;
 
 /**
  * Esta clase es una factoria de Pools que al mismo tiempo la convierte en
- * Singelton
+ * Singelton.
  *
  * @author Jason.
  */

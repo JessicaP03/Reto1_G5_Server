@@ -45,9 +45,14 @@ public class SocketServer {
 
             while (serverAbierto) {
 
-                if (num_users < MAX_USERS) {
+                client = server.accept();
 
-                    client = server.accept();
+                if (num_users < MAX_USERS) {
+                    oos = new ObjectOutputStream(client.getOutputStream());
+                    Message encapsulator = new Message();
+                    encapsulator.setMessageType(MessageType.OK_RESPONSE);
+                    oos.writeObject(encapsulator);
+
                     LOGGER.info("Un cliente se ha conectado.");
 
                     WorkingThread wt = new WorkingThread(client);

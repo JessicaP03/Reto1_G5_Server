@@ -68,6 +68,11 @@ public class WorkingThread extends Thread {
                     message.setUser(user);
                     message.setMessageType(MessageType.OK_RESPONSE);
                     break;
+
+                default:
+                    message.setUser(user);
+                    message.setMessageType(MessageType.ERROR_RESPONSE);
+                    break;
             }
 
         } catch (IOException e) {

@@ -8,6 +8,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -85,6 +86,8 @@ public class DaoImplementation implements Signable {
         ResultSet rs = null;
 
         try {
+            conn.setAutoCommit(false);
+
             if (comprobarUsuarioExistente(user.getEmail())) {
                 throw new UserAlreadyExistsException("El usuario " + user.getEmail() + " ya existe.");
             }
@@ -98,7 +101,6 @@ public class DaoImplementation implements Signable {
                 if (partnerId == 0) {
                     partnerId = 1;
                 }
-
             }
 
             stmt = conn.prepareStatement(INSERT_RES_PARTNER);
@@ -112,49 +114,55 @@ public class DaoImplementation implements Signable {
             stmt.setInt(8, user.getPhone());
             stmt.setBoolean(9, user.getActivo());
 
-            if (stmt.executeUpdate() == 1) {
+            stmt.executeUpdate();
 
-                stmt = conn.prepareStatement(INSERT_RES_USERS);
-                stmt.setInt(1, user.getCompany());
-                stmt.setInt(2, partnerId + 1);
-                stmt.setDate(3, Date.valueOf(user.getCreateDate()));
-                stmt.setString(4, user.getEmail());
-                stmt.setString(5, user.getPasswd());
-                stmt.setDate(6, Date.valueOf(user.getWriteDate()));
+            stmt = conn.prepareStatement(INSERT_RES_USERS);
+            stmt.setInt(1, user.getCompany());
+            stmt.setInt(2, partnerId + 1);
+            stmt.setDate(3, Date.valueOf(user.getCreateDate()));
+            stmt.setString(4, user.getEmail());
+            stmt.setString(5, user.getPasswd());
+            stmt.setDate(6, Date.valueOf(user.getWriteDate()));
 
-                if (stmt.executeUpdate() == 1) {
-                    int idUser = 0;
+            stmt.executeUpdate();
+            int idUser = 0;
 
-                    stmt = conn.prepareStatement(SELECT_MAX_USERS);
-                    rs = stmt.executeQuery();
+            stmt = conn.prepareStatement(SELECT_MAX_USERS);
+            rs = stmt.executeQuery();
 
-                    if (rs.next()) {
-                        idUser = rs.getInt("id");
+            if (rs.next()) {
+                idUser = rs.getInt("id");
 
-                        if (idUser == 0) {
-                            idUser = 1;
-                        }
-
-                    }
-                    stmt = conn.prepareStatement(INSERT_RES_GROUPS);
-
-                    stmt.setInt(1, idUser);
-                    stmt.setInt(2, idUser);
-                    stmt.setInt(3, idUser);
-                    stmt.setInt(4, idUser);
-
-                    if (stmt.executeUpdate() == 1) {
-
-                        stmt = conn.prepareStatement(INSERT_RES_COMPANY);
-                        stmt.setInt(1, idUser);
-                        stmt.executeUpdate();
-
-                    }
+                if (idUser == 0) {
+                    idUser = 1;
                 }
             }
+
+            stmt = conn.prepareStatement(INSERT_RES_GROUPS);
+
+            stmt.setInt(1, idUser);
+            stmt.setInt(2, idUser);
+            stmt.setInt(3, idUser);
+            stmt.setInt(4, idUser);
+
+            stmt.executeUpdate();
+
+            stmt = conn.prepareStatement(INSERT_RES_COMPANY);
+            stmt.setInt(1, idUser);
+            stmt.executeUpdate();
+
+            conn.commit();
+
         } catch (SQLException ex) {
-            throw new ServerErrorException("Ha ocurrido un problema en el servidor");
+            try {
+                conn.rollback();
+                throw new ServerErrorException("Ha ocurrido un error al insertar un usuario en el servidor");
+
+            } catch (SQLException ex1) {
+                throw new ServerErrorException("Ha ocurrido un error a la hora de hacer un rollback en el servidor");
+            }
         }
+
         this.closeConnection();
         return user;
     }
@@ -200,7 +208,6 @@ public class DaoImplementation implements Signable {
                     u.setZip(rs2.getInt("zip"));
                 }
             } else {
-                //    throw new CredentialErrorException("El email y la contraseña no coinciden");
                 throw new CredentialErrorException("El email: " + user.getEmail() + " y/o la contraseña:  " + user.getPasswd() + " no son correctas.");
             }
 
